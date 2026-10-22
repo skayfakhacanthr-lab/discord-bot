@@ -32,7 +32,6 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# วาง TOKEN บอทของคุณที่นี่
 TOKEN = "MTU2MjgzMTA0NDEyNDg3Mjg1Ng.GCaIIS.aM2KMDyIT-9tvmcbNxR7y8pXFgEV3kVPyJNPEw'"
 
 if __name__ == "__main__":
