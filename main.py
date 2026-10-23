@@ -5,7 +5,7 @@ from discord.ext import commands
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
-# สร้างเว็บเซิร์ฟเวอร์รับพอร์ตเพื่อตอบสนอง Render (Web Service Health Check)
+# 1. เปิดเว็บเซิร์ฟเวอร์รับพอร์ตทันทีที่เริ่มรันโปรแกรม เพื่อให้ Render ตรวจพบพอร์ต 10000 ทันที
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -17,7 +17,7 @@ def run_server():
     server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
     server.serve_forever()
 
-# รันเว็บเซิร์ฟเวอร์ไว้เบื้องหลัง
+# สตาร์ทเว็บเซิร์ฟเวอร์แบบเบื้องหลัง
 threading.Thread(target=run_server, daemon=True).start()
 
 intents = discord.Intents.default()
@@ -25,7 +25,6 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ปรับ Regex ให้ครอบคลุมลิงก์เชิญทุกรูปแบบ
 INVITE_REGEX = r"(https?://)?(www\.)?(discord\(app\)?\.com/invite|discord\.gg)/[a-zA-Z0-9]+"
 
 @bot.event
@@ -37,7 +36,6 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # ตรวจจับลิงก์เชิญ
     if re.search(INVITE_REGEX, message.content, re.IGNORECASE):
         try:
             await message.delete()
@@ -45,7 +43,6 @@ async def on_message(message):
                 f"⚠️ {message.author.mention} ห้ามส่งลิงก์ดิสอื่นในเซิร์ฟเวอร์นี้!",
                 delete_after=5,
             )
-            print(f"Deleted invite link from {message.author}")
         except discord.Forbidden:
             print("เกิดข้อผิดพลาด: บอทไม่มีสิทธิ์ Manage Messages ในการลบข้อความนี้")
         except discord.HTTPException as e:
