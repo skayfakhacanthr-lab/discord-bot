@@ -5,7 +5,7 @@ from discord.ext import commands
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
-# สร้างเว็บเซิร์ฟเวอร์รับพอร์ตเพื่อตอบสนอง Render (Web Service Health Check)
+# Web server สำหรับหลอกพอร์ต Render
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -17,36 +17,37 @@ def run_server():
     server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
     server.serve_forever()
 
-# รันเว็บเซิร์ฟเวอร์ไว้เบื้องหลัง
 threading.Thread(target=run_server, daemon=True).start()
 
 intents = discord.Intents.default()
+intents.messages = True
 intents.message_content = True
+intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-INVITE_REGEX = r"(https?://)?(www\.)?(discord\(app\)?\.com/invite|discord\.gg)/[a-zA-Z0-9]+"
-
 @bot.event
 async def on_ready():
-    print(f"บอทออนไลน์แล้วในชื่อ: {bot.user.name}")
+    print(f"Bot logged in as {bot.user.name}")
 
 @bot.event
 async def on_message(message):
-    if message.author.bot:
+    # ป้องกันไม่ให้บอทลบข้อความของตัวเอง
+    if message.author == bot.user:
         return
 
-    if re.search(INVITE_REGEX, message.content):
+    # เช็กคำว่า discord.gg หรือ discord.com/invite ในข้อความ
+    content = message.content.lower()
+    if "discord.gg/" in content or "discord.com/invite/" in content or "discordapp.com/invite/" in content:
         try:
             await message.delete()
             await message.channel.send(
                 f"⚠️ {message.author.mention} ห้ามส่งลิงก์ดิสอื่นในเซิร์ฟเวอร์นี้!",
-                delete_after=5,
+                delete_after=5
             )
-        except discord.Forbidden:
-            print("เกิดข้อผิดพลาด: บอทไม่มีสิทธิ์ Manage Messages ในการลบข้อความนี้")
-        except discord.HTTPException as e:
-            print(f"เกิดข้อผิดพลาดในการลบข้อความ: {e}")
+            print(f"Deleted invite link from {message.author}")
+        except Exception as e:
+            print(f"Error deleting message: {e}")
 
     await bot.process_commands(message)
 
@@ -56,4 +57,4 @@ if __name__ == "__main__":
     if TOKEN:
         bot.run(TOKEN)
     else:
-        print("ไม่พบ DISCORD_TOKEN ใน Environment Variables")
+        print("Error: DISCORD_TOKEN not found!")
