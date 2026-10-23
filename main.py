@@ -1,35 +1,56 @@
 import os
-import re
 import discord
 from discord.ext import commands
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+
+# สร้าง Health Check Server สำหรับ Render
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+    def log_message(self, format, *args):
+        return
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+server_thread = threading.Thread(target=run_http_server, daemon=True)
+server_thread.start()
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-INVITE_REGEX = r"(https?://)?(www\.)?(discord\(app\)?\.com/invite|discord\.gg)/[a-zA-Z0-9]+"
-
 @bot.event
 async def on_ready():
-    print(f"บอทออนไลน์แล้วในชื่อ: {bot.user.name}")
+    print(f"Logged in as {bot.user.name}")
 
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    if re.search(INVITE_REGEX, message.content):
+    # แปลงข้อความให้เป็นตัวพิมพ์เล็กทั้งหมดเพื่อเช็กคำง่ายขึ้น
+    content = message.content.lower()
+
+    # เช็กคำว่า discord.gg หรือ invite ในข้อความ (ครอบคลุมทุกลิงก์ชวนเพื่อน)
+    if "discord.gg/" in content or "discord.com/invite/" in content or "discordapp.com/invite/" in content:
         try:
             await message.delete()
             await message.channel.send(
-                f"⚠️ {message.author.mention} ห้ามส่งลิงก์เชิญ Discord ในช่องนี้ครับ!",
+                f"⚠️ {message.author.mention} ห้ามส่งลิงก์ดิสอื่นในเซิร์ฟเวอร์นี้!",
                 delete_after=5,
             )
+            print(f"Deleted invite link from {message.author}")
         except discord.Forbidden:
-            print("เกิดข้อผิดพลาด: บอทไม่มีสิทธิ์ Manage Messages ในการลบข้อความนี้")
-        except discord.HTTPException as e:
-            print(f"เกิดข้อผิดพลาดในการลบข้อความ: {e}")
+            print("Error: บอทไม่มีสิทธิ์ Manage Messages")
+        except Exception as e:
+            print(f"Error: {e}")
 
     await bot.process_commands(message)
 
@@ -39,4 +60,4 @@ if __name__ == "__main__":
     if TOKEN:
         bot.run(TOKEN)
     else:
-        print("ไม่พบ DISCORD_TOKEN ใน Environment Variables")
+        print("Error: DISCORD_TOKEN not found.")
