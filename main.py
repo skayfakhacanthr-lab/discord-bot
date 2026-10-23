@@ -1,7 +1,23 @@
 import os
 import re
+import asyncio
 import discord
 from discord.ext import commands
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+
+# รันเว็บเซิร์ฟเวอร์จำลองเพื่อให้ Render มองว่ามีพอร์ตเปิดอยู่ (แก้ปัญหา No open ports)
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running!")
+
+def run_server():
+    server = HTTPServer(('0.0.0.0', 10000), SimpleHandler)
+    server.serve_forever()
+
+threading.Thread(target=run_server, daemon=True).start()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -23,7 +39,7 @@ async def on_message(message):
         try:
             await message.delete()
             await message.channel.send(
-                f"⚠️ {message.author.mention} ห้ามส่งลิงก์เชิญ Discord ในช่องนี้ครับ!",
+                f"⚠️ {message.author.mention} ห้ามส่งลิงก์ดิสอื่นในเซิร์ฟเวอร์นี้!",
                 delete_after=5,
             )
         except discord.Forbidden:
