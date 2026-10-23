@@ -6,18 +6,20 @@ from discord.ext import commands
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
-# รันเว็บเซิร์ฟเวอร์จำลองเพื่อให้ Render มองว่ามีพอร์ตเปิดอยู่ (แก้ปัญหา No open ports)
-class SimpleHandler(BaseHTTPRequestHandler):
+# เปิดเว็บเซิร์ฟเวอร์จำลองเพื่อตอบรับพอร์ตของ Render (แก้ปัญหา No open ports detected)
+class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Bot is running!")
+        self.wfile.write(b"Discord Bot is active!")
 
-def run_server():
-    server = HTTPServer(('0.0.0.0', 10000), SimpleHandler)
+def run_web_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
     server.serve_forever()
 
-threading.Thread(target=run_server, daemon=True).start()
+# รันเว็บเซิร์ฟเวอร์ควบคู่กับบอท Discord ในเบื้องหลัง
+threading.Thread(target=run_web_server, daemon=True).start()
 
 intents = discord.Intents.default()
 intents.message_content = True
