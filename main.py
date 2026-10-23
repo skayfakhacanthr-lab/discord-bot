@@ -23,7 +23,7 @@ async def on_message(message):
         try:
             await message.delete()
             await message.channel.send(
-                f"⚠️ {message.author.mention} ห้ามส่งลิงก์ดิสอื่นในเซิร์ฟเวอร์นี้!",
+                f"⚠️ {message.author.mention} ห้ามส่งลิงก์เชิญ Discord ในช่องนี้ครับ!",
                 delete_after=5,
             )
         except discord.Forbidden:
